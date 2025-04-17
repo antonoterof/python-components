@@ -63,8 +63,39 @@ class CoapClientConnector(IRequestResponseClient):
 		return self.sendGetRequest(resource = None, name = '.well-known/core', enableCON = False, timeout = timeout)
 
 	def sendDeleteRequest(self, resource: ResourceNameEnum = None, name: str = None, enableCON: bool = False, timeout: int = IRequestResponseClient.DEFAULT_TIMEOUT) -> bool:
-		logging.info(f"sendDeleteRequest called for resource {resource}")
-		return False
+		if resource or name:
+			resourcePath = self._createResourcePath(resource, name)
+			
+			logging.info("Issuing Async DELETE to path: " + resourcePath)
+			
+			asyncio.get_event_loop().run_until_complete(self._handleDeleteRequest(resourcePath = resourcePath, enableCON = enableCON))
+		else:
+			logging.warning("Can't issue Async DELETE - no path or path list provided.")
+
+	async def _handleDeleteRequest(self, resourcePath: str = None, enableCON: bool = False):
+		try:
+			msgType = NON
+			
+			if enableCON:
+				msgType = CON
+				
+			msg = Message(mtype = msgType, code = Code.DELETE, uri = resourcePath)
+			req = self.coapClient.request(msg)
+			responseData = await req.response
+			
+			self._onDeleteResponse(responseData)
+
+		except Exception as e:
+			# TODO: for debugging, you may want to optionally include the stack trace, as shown
+			logging.warning("Failed to process DELETE request for path: " + resourcePath)
+			traceback.print_exception(type(e), e, e.__traceback__)
+
+	def _onDeleteResponse(self, response):
+		if not response:
+			logging.warning('DELETE response invalid. Ignoring.')
+			return
+		
+		logging.info('DELETE response received: %s', response.payload)
 
 	def sendGetRequest(self, resource: ResourceNameEnum = None, name: str = None, enableCON: bool = False, timeout: int = IRequestResponseClient.DEFAULT_TIMEOUT) -> bool:
 		if resource or name:
@@ -123,23 +154,161 @@ class CoapClientConnector(IRequestResponseClient):
 			logging.info("Response data received. Payload: %s", jsonData)
 
 	def sendPostRequest(self, resource: ResourceNameEnum = None, name: str = None, enableCON: bool = False, payload: str = None, timeout: int = IRequestResponseClient.DEFAULT_TIMEOUT) -> bool:
-		logging.info(f"sendPostRequest called for resource {resource}")
-		return False
+		if resource or name:
+			resourcePath = self._createResourcePath(resource, name)
+			
+			logging.info("Issuing Async POST to path: " + resourcePath)
+			
+			asyncio.get_event_loop().run_until_complete(self._handlePostRequest(resourcePath = resourcePath, payload = payload, enableCON = enableCON))
+		else:
+			logging.warning("Can't issue Async POST - no path or path list provided.")
+
+	async def _handlePostRequest(self, resourcePath: str = None, payload: str = None, enableCON: bool = False):
+		try:
+			msgType = NON
+			
+			if enableCON:
+				msgType = CON
+				
+			payloadBytes = b''
+			
+			# decide which encoding to use - can also load from config
+			if payload:
+				payloadBytes = payload.encode('utf-8')
+					
+			msg = Message(mtype = msgType, payload = payloadBytes, code = Code.POST, uri = resourcePath)
+			req = self.coapClient.request(msg)
+			responseData = await req.response
+			
+			self._onPostResponse(responseData)
+
+		except Exception as e:
+			# TODO: for debugging, you may want to optionally include the stack trace, as shown
+			logging.warning("Failed to process POST request for path: " + resourcePath)
+			traceback.print_exception(type(e), e, e.__traceback__)
+
+	def _onPostResponse(self, response):
+		if not response:
+			logging.warning('POST response invalid. Ignoring.')
+			return
+		
+		logging.info('POST response received: %s', response.payload)
 
 	def sendPutRequest(self, resource: ResourceNameEnum = None, name: str = None, enableCON: bool = False, payload: str = None, timeout: int = IRequestResponseClient.DEFAULT_TIMEOUT) -> bool:
-		logging.info(f"sendPutRequest called for resource {resource}")
-		return False
+		if resource or name:
+			resourcePath = self._createResourcePath(resource, name)
+			
+			logging.info("Issuing Async PUT to path: " + resourcePath)
+			
+			asyncio.get_event_loop().run_until_complete(self._handlePutRequest(resourcePath = resourcePath, payload = payload, enableCON = enableCON))
+		else:
+			logging.warning("Can't issue Async PUT - no path or path list provided.")
+	
+	async def _handlePutRequest(self, resourcePath: str = None, payload: str = payload, enableCON: bool = False):
+		try:
+			msgType = NON
+			
+			if enableCON:
+				msgType = CON
+				
+			payloadBytes = b''
+			
+			# decide which encoding to use - can also load from config
+			if payload:
+				payloadBytes = payload.encode('utf-8')
+					
+			msg = Message(mtype = msgType, payload = payloadBytes, code = Code.PUT, uri = resourcePath)
+			req = self.coapClient.request(msg)
+			responseData = await req.response
+			
+			self._onPutResponse(responseData)
+
+		except Exception as e:
+			# TODO: for debugging, you may want to optionally include the stack trace, as shown
+			logging.warning("Failed to process PUT request for path: " + resourcePath)
+			traceback.print_exception(type(e), e, e.__traceback__)
+
+	def _onPutResponse(self, response):
+		if not response:
+			logging.warning('PUT response invalid. Ignoring.')
+			return
+		
+		logging.info('PUT response received: %s', response.payload)
 
 	def setDataMessageListener(self, listener: IDataMessageListener = None) -> bool:
 		pass
 
 	def startObserver(self, resource: ResourceNameEnum = None, name: str = None, ttl: int = IRequestResponseClient.DEFAULT_TTL) -> bool:
-		logging.info(f"startObserver called for resource {resource}")
-		return False
+		if resource or name:
+			resourcePath = self._createResourcePath(resource, name)
+			
+			if resourcePath in self.observeRequests:
+				logging.warning("Already observing resource %s. Ignoring start observe request.", resourcePath)
+				return
+			
+			asyncio.get_event_loop().run_until_complete( \
+				asyncio.ensure_future(self._handleStartObserveRequest(resourcePath)))
+		else:
+			logging.warning("Can't issue Async OBSERVE - GET - no path or path list provided.")
 
-	def stopObserver(self, resource: ResourceNameEnum = None, name: str = None, timeout: int = IRequestResponseClient.DEFAULT_TIMEOUT) -> bool:
-		logging.info(f"stopObserver called for resource {resource}")
-		return False
+	def stopObserver(self, resource: ResourceNameEnum = None, name: str = None) -> bool:
+		if resource or name:
+			resourcePath = self._createResourcePath(resource, name)
+			
+			if not resourcePath in self.observeRequests:
+				logging.warning("Resource %s not being observed. Ignoring stop observe request.", resourcePath)
+				return
+			
+			asyncio.get_event_loop().run_until_complete( \
+				self._handleStopObserveRequest(resourcePath))
+		else:
+			logging.warning("Can't cancel OBSERVE - GET - no path provided.")
+
+	async def _handleStartObserveRequest(self, resourcePath: str = None):
+		logging.info('Handle start observe invoked. Waiting for each input: ' + resourcePath)
+		
+		msg = Message(code = Code.GET, uri = resourcePath, observe = 0)
+		req = self.coapClient.request(msg)
+		
+		self.observeRequests[resourcePath] = req
+				
+		try:
+			responseData = await req.response
+			
+			# TODO: validate response first		
+			self._onGetResponse(responseData)
+			
+			async for responseData in req.observation:
+				# TODO: validate response first
+				self._onGetResponse(responseData)
+				
+				req.observation.cancel()
+				break
+			
+		except Exception as e:
+			# TODO: log warning and possibly stack trace, then be sure to stop observing...
+			logging.warning("Failed to execute OBSERVE - GET. Recovering...")
+			traceback.print_exception(type(e), e, e.__traceback__)
+
+	async def _handleStopObserveRequest(self, resourcePath: str = None, ignoreErr: bool = False):
+		if resourcePath in self.observeRequests:
+			logging.info('Handle stop observe invoked: ' + resourcePath)
+			
+			try:
+				observeRequest = self.observeRequests[resourcePath]
+				observeRequest.observation.cancel()
+			except Exception as e:
+				if not ignoreErr:
+					logging.warning("Failed to cancel OBSERVE - GET: " + resourcePath)
+			
+			try:
+				del self.observeRequests[resourcePath]
+			except Exception as e:
+				if not ignoreErr:
+					logging.warning("Failed to remove observable from list: " + resourcePath)
+			
+		else:
+			logging.warning('Resource not currently under observation. Ignoring: ' + resourcePath)
 	
 	def _initClient(self):
 		asyncio.get_event_loop().run_until_complete(self._initClientContext())
@@ -171,3 +340,28 @@ class CoapClientConnector(IRequestResponseClient):
 			resourcePath = resourcePath + name
 		
 		return self.uriPath + resourcePath
+
+	class HandleActuatorEvent():
+		def __init__(self, \
+				listener: IDataMessageListener = None, \
+				resourcePath: str = None, \
+				requests = None):
+			
+			self.listener = listener
+			self.resourcePath = resourcePath
+			self.observeRequests = requests
+			
+		def handleActuatorResponse(self, response):
+			if response:
+				jsonData = response.payload
+				
+				self.observeRequests[self.resourcePath] = response
+				
+				logging.info("Received actuator command response to resource %s: %s", self.resourcePath, jsonData)
+				
+				if self.listener:
+					try:
+						data = DataUtil().jsonToActuatorData(jsonData = jsonData)
+						self.listener.handleActuatorCommandMessage(data = data)
+					except:
+						logging.warning("Failed to decode actuator data for resource %s. Ignoring: %s", self.resourcePath, jsonData)
