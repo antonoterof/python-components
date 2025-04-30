@@ -54,6 +54,8 @@ class MqttClientConnector(IPubSubClient):
 		#  3 - hard code a clientID in this constructor (generally not recommended)
 		#  4 - if using Python Paho, set NO client ID and let broker auto-assign
 		#      a random value (not recommended if setting clean session flag to False)
+		if clientID:
+			self.clientID = clientID
 
 		# TODO: the following is just a sample; use your own unique ID
 		if not clientID:
