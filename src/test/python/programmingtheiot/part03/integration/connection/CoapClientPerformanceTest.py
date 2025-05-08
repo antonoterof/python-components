@@ -59,7 +59,7 @@ class CoapClientPerformanceTest(unittest.TestCase):
 		
 		self._execTestGet(self.MAX_TEST_RUNS, False)
 
-	@unittest.skip("Ignore for now.")
+	#@unittest.skip("Ignore for now.")
 	def testPostRequestCon(self):
 		"""
 		Comment the annotation to perf test CON POST
@@ -68,7 +68,7 @@ class CoapClientPerformanceTest(unittest.TestCase):
 		
 		self._execTestPost(self.MAX_TEST_RUNS, True)
 
-	@unittest.skip("Ignore for now.")
+	#@unittest.skip("Ignore for now.")
 	def testPostRequestNon(self):
 		"""
 		Comment the annotation to perf test NON POST

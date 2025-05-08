@@ -204,7 +204,7 @@ class CoapClientConnector(IRequestResponseClient):
 		else:
 			logging.warning("Can't issue Async PUT - no path or path list provided.")
 	
-	async def _handlePutRequest(self, resourcePath: str = None, payload: str = payload, enableCON: bool = False):
+	async def _handlePutRequest(self, resourcePath: str = None, payload: str = None, enableCON: bool = False):
 		try:
 			msgType = NON
 			
