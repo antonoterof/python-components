@@ -17,6 +17,8 @@ from time import sleep
 from programmingtheiot.cda.system.SystemPerformanceManager import SystemPerformanceManager
 from programmingtheiot.common.ConfigUtil import ConfigUtil
 from programmingtheiot.cda.app.DeviceDataManager import DeviceDataManager
+from programmingtheiot.common import ConfigConst
+
 
 logging.basicConfig(format = '%(asctime)s:%(name)s:%(levelname)s:%(message)s', level = logging.DEBUG)
 
