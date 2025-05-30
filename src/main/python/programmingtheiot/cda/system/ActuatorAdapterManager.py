@@ -19,6 +19,8 @@ from programmingtheiot.data.ActuatorData import ActuatorData
 
 from programmingtheiot.cda.sim.HvacActuatorSimTask import HvacActuatorSimTask
 from programmingtheiot.cda.sim.HumidifierActuatorSimTask import HumidifierActuatorSimTask
+from programmingtheiot.cda.sim.LightActuatorSimTask import LightActuatorSimTask
+
 
 class ActuatorAdapterManager(object):
 	"""
@@ -47,6 +49,8 @@ class ActuatorAdapterManager(object):
 		self.humidifierActuator = None
 		self.hvacActuator       = None
 		self.ledDisplayActuator = None
+		self.lightActuator = None
+
 		
 		# see PIOT-CDA-03-007 description for thoughts on the next line of code
 		self._initEnvironmentalActuationTasks()
@@ -58,6 +62,9 @@ class ActuatorAdapterManager(object):
 			
 			# create the HVAC actuator
 			self.hvacActuator = HvacActuatorSimTask()
+
+			self.lightActuator = LightActuatorSimTask()
+
 		else:
 			hueModule = import_module('programmingtheiot.cda.emulated.HumidifierEmulatorTask', 'HumidiferEmulatorTask')
 			hueClazz = getattr(hueModule, 'HumidifierEmulatorTask')
@@ -68,6 +75,12 @@ class ActuatorAdapterManager(object):
 			hveClazz = getattr(hveModule, 'HvacEmulatorTask')
 			self.hvacActuator = hveClazz()
 			
+			# create the light actuator emulator
+			liModule = import_module('programmingtheiot.cda.emulated.LightActuatorEmulatorTask', 'LightActuatorEmulatorTask')
+			liClazz = getattr(liModule, 'LightActuatorEmulatorTask')
+			self.lightActuator = liClazz()
+
+
 			# create the LED display actuator emulator
 			leDisplayModule = import_module('programmingtheiot.cda.emulated.LedDisplayEmulatorTask', 'LedDisplayEmulatorTask')
 			leClazz = getattr(leDisplayModule, 'LedDisplayEmulatorTask')
@@ -89,6 +102,8 @@ class ActuatorAdapterManager(object):
 					responseData = self.hvacActuator.updateActuator(data)
 				elif aType == ConfigConst.LED_DISPLAY_ACTUATOR_TYPE and self.ledDisplayActuator:
 					responseData = self.ledDisplayActuator.updateActuator(data)
+				elif aType == ConfigConst.LIGHT_ACTUATOR_TYPE and self.lightActuator:
+					responseData = self.lightActuator.updateActuator(data)
 				else:
 					logging.warning("No valid actuator type. Ignoring actuation for type: %s", data.getTypeID())
 					

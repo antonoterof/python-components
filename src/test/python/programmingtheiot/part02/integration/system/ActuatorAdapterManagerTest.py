@@ -61,6 +61,17 @@ class ActuatorAdapterManagerTest(unittest.TestCase):
 		ad.setCommand(ConfigConst.COMMAND_OFF)
 		self.actuatorAdapterMgr.sendActuatorCommand(ad)
 
+	def testLightSimulation(self):
+		ad = ActuatorData(typeID = ConfigConst.LIGHT_ACTUATOR_TYPE)
+		ad.setValue(1.0)
+
+		ad.setCommand(ConfigConst.COMMAND_ON)
+		self.actuatorAdapterMgr.sendActuatorCommand(ad)
+
+		ad.setCommand(ConfigConst.COMMAND_OFF)
+		self.actuatorAdapterMgr.sendActuatorCommand(ad)
+
+
 if __name__ == "__main__":
 	unittest.main()
 	

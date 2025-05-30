@@ -62,6 +62,17 @@ class ActuatorEmulatorManagerTest(unittest.TestCase):
 		ad.setCommand(ConfigConst.COMMAND_OFF)
 		self.actuatorAdapterMgr.sendActuatorCommand(ad)
 
+	def testLightActuatorEmulation(self):
+		ad = ActuatorData(typeID = ConfigConst.LIGHT_ACTUATOR_TYPE)
+		ad.setValue(1.0)
+
+		ad.setCommand(ConfigConst.COMMAND_ON)
+		self.actuatorAdapterMgr.sendActuatorCommand(ad)
+
+		ad.setCommand(ConfigConst.COMMAND_OFF)
+		self.actuatorAdapterMgr.sendActuatorCommand(ad)
+
+
 	def testHvacEmulation(self):
 		ad = ActuatorData(typeID = ConfigConst.HVAC_ACTUATOR_TYPE)
 		ad.setValue(22.5)

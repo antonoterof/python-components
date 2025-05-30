@@ -41,6 +41,11 @@ class SensorDataGenerator(object):
 	LOW_NORMAL_ENV_HUMIDITY = 35.0
 	HI_NORMAL_ENV_HUMIDITY = 45.0
 	MAX_ENV_HUMIDITY = 100.0
+
+	MIN_ENV_LIGHT = DEFAULT_MIN_VALUE
+	LOW_NORMAL_ENV_LIGHT = 100.0     
+	HI_NORMAL_ENV_LIGHT  = 800.0     
+	MAX_ENV_LIGHT = 1000.0
 	
 	MIN_ENV_PRESSURE = 500.0
 	LOW_NORMAL_ENV_PRESSURE = 990.0
@@ -66,6 +71,7 @@ class SensorDataGenerator(object):
 	DEFAULT_TEMP_CURVE = FULL_WAVE
 	DEFAULT_HUMIDITY_CURVE = BELL_CURVE
 	DEFAULT_PRESSURE_CURVE = INVERSE_CURVE
+	DEFAULT_LIGHT_CURVE = BELL_CURVE
 	
 	def __init__(self, epochOffsetSeconds: float = 0.0, useCurrentTime: bool = True, alignGeneratorToDay: bool = True):
 		"""
@@ -110,6 +116,24 @@ class SensorDataGenerator(object):
 		
 		return self.generateDailySensorDataSet(curveType = self.DEFAULT_HUMIDITY_CURVE, noiseLevel = noiseLevel, minValue = minValue, maxValue = maxValue, startHour = 0, endHour = 24, useSeconds = useSeconds)
 		
+	def generateDailyLightDataSet(self, noiseLevel: int = DEFAULT_NOISE, minValue: float = LOW_NORMAL_ENV_LIGHT, maxValue: float = HI_NORMAL_ENV_LIGHT, useSeconds: bool = False):
+	
+		if maxValue < self.LOW_NORMAL_ENV_LIGHT or maxValue > self.HI_NORMAL_ENV_LIGHT:
+			maxValue = self.HI_NORMAL_ENV_LIGHT
+		if minValue < self.LOW_NORMAL_ENV_LIGHT or minValue >= maxValue:
+			minValue = maxValue - 1
+
+		return self.generateDailySensorDataSet(
+			curveType = self.DEFAULT_LIGHT_CURVE,
+			noiseLevel = noiseLevel,
+			minValue = minValue,
+			maxValue = maxValue,
+			startHour = 0,
+			endHour = 24,
+			useSeconds = useSeconds
+		)
+
+
 	def generateDailyEnvironmentPressureDataSet(self, noiseLevel: int = DEFAULT_NOISE, minValue: float = MIN_ENV_PRESSURE, maxValue: float = MAX_ENV_PRESSURE, useSeconds: bool = False):
 		"""
 		Generates a time-series data set for indoor temperature simulation over a 24-hour period.
@@ -456,6 +480,20 @@ def main():
 	sensorDataSet = sensorDataGenerator.generateDailyEnvironmentHumidityDataSet(noiseLevel = 10, minValue = SensorDataGenerator.LOW_NORMAL_ENV_HUMIDITY, maxValue = SensorDataGenerator.HI_NORMAL_ENV_HUMIDITY)
 	sensorDataGenerator.generateOnScreenGraph(chartTitle = "Humidity", chartXLabel = "Hour", chartYLabel = "Relative %", dataSet = sensorDataSet)
 	
+	# Run light example - 1 minute samples over 24 hours - start time is system's current time
+	sensorDataSet = sensorDataGenerator.generateDailyLightDataSet(
+		noiseLevel = 10,
+		minValue = SensorDataGenerator.LOW_NORMAL_ENV_LIGHT,
+		maxValue = SensorDataGenerator.HI_NORMAL_ENV_LIGHT
+	)
+	sensorDataGenerator.generateOnScreenGraph(
+		chartTitle = "Ambient Light",
+		chartXLabel = "Hour",
+		chartYLabel = "Lumens",
+		dataSet = sensorDataSet
+	)
+
+
 	# run pressure example - 1 minute samples over 24 hours - start time will be this system's current time
 	sensorDataSet = sensorDataGenerator.generateDailyEnvironmentPressureDataSet(noiseLevel = 1, minValue = SensorDataGenerator.LOW_NORMAL_ENV_PRESSURE, maxValue = SensorDataGenerator.HI_NORMAL_ENV_PRESSURE)
 	sensorDataGenerator.generateOnScreenGraph(chartTitle = "Pressure", chartXLabel = "Hour", chartYLabel = "Millibars", dataSet = sensorDataSet)
